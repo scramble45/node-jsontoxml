@@ -174,12 +174,36 @@ module.exports.obj_to_xml = module.exports;
 
 module.exports.escape = esc;
 
+function strReplaceChar(str, i, c) {
+    var s = str.slice(0, i) + c;
+    if(i + 1 < str.length)
+	s += str.slice(i+1);
+    return s;
+}
+
 function esc(str){
-  return (''+str).replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/'/g, '&apos;')
-      .replace(/"/g, '&quot;');
+    for(var i = 0; i < str.length; i++) {
+	var c = str.charCodeAt(i);
+	if(c > 127) {
+	    str = strReplaceChar(str, i, '_');
+	} else if(c === 38) { // &
+	    str = strReplaceChar(str, i, '&amp;');
+	    i += 4;
+	} else if(c === 60) { // <
+	    str = strReplaceChar(str, i, '&lt;');
+	    i += 3;
+	} else if(c === 62) { // >
+	    str = strReplaceChar(str, i, '&gt;');
+	    i += 3;
+	} else if(c === 39) { // '
+	    str = strReplaceChar(str, i, '&apos;');
+	    i += 5;
+	} else if(c === 34) { // "
+	    str = strReplaceChar(str, i, '&quot;');
+	    i += 5;
+	}
+    }
+    return str;
 }
 
 module.exports.cdata = cdata;
