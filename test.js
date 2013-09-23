@@ -1,8 +1,8 @@
 //copyright Ryan Day 2010 <http://ryanday.org> [MIT Licensed]
 
-var test = require('tape')
-, jsonxml = require("./jsontoxml.js")
-;
+var jsonxml = require("./jsontoxml.js");
+var async = require('async');
+var assert = require('assert');
 
 var date = (new Date());
 var input = {
@@ -22,7 +22,8 @@ var input = {
     node:'i am another not special child node',
     date:date+'',
     date2:date
-  }
+  },
+  unicode:'mixed \u0050\u0070\u00A0\u00E0\u0160\uD800\uDC00'
 };
 
 var expected_no_element_substitution = 
@@ -46,7 +47,8 @@ var expected_no_element_substitution =
   +'<node>i am another not special child node</node>'
   +'<date>'+date+'</date>'
   +'<date2>'+date.toJSON()+'</date2>'
-+'</parent2>';
++'</parent2>'
++'<unicode>mixed Pp&#160;&#224;&#352;&#65536;</unicode>';
 
 var expected_with_element_substitution = 
 '<node>text content</node>'
@@ -69,26 +71,56 @@ var expected_with_element_substitution =
   +'<node>i am another not special child node</node>'
   +'<date>'+date+'</date>'
   +'<date2>'+date.toJSON()+'</date2>'
-+'</parent2>';
++'</parent2>'
++'<unicode>mixed Pp&#160;&#224;&#352;&#65536;</unicode>';
 
-var expected = expected_no_element_substitution;
-var buffer = new Buffer(JSON.stringify(input));
+var expected_with_element_substitution_and_xml_header = 
+ '<?xml version="1.0" encoding="utf-8"?>'
++'<node>text content</node>'
++'<parent>'
+  +'<taco>'
+    +'beef taco'
+    +'<salsa>hot!</salsa>'
+  +'</taco>'
+  +'<_>tag</_>'
+  +'<taco mood="sad">'
+    +'fish taco'
+    +'<salsa>mild</salsa>'
+    +'hi'
+    +'<salsa type="2">weak</salsa>'
+  +'</taco>'
+  +"<taco mood=\"party!\"/>"
++'</parent>'
++'<parent2>'
+  +'<hi>this &amp; this is a nice thing to say</hi>'
+  +'<node>i am another not special child node</node>'
+  +'<date>'+date+'</date>'
+  +'<date2>'+date.toJSON()+'</date2>'
++'</parent2>'
++'<unicode>mixed \u0050\u0070\u00A0\u00E0\u0160\uD800\uDC00</unicode>'
 
-test("creates correct object from buffer",function(t){
-  var result = jsonxml(buffer,{escape:true});
-  t.equals(result,expected,' should have generated correct xml');
-  t.end()
-});
+var tests = [
+    function(cb) {
+	var buffer = new Buffer(JSON.stringify(input));
+	var result = jsonxml(buffer, {escape:true});
+	assert.equal(result, expected_no_element_substitution, "Buffer test failed");
+	cb();
+    },
+    function(cb) {
+	var result = jsonxml(input, {escape:true});
+	assert.equal(result, expected_no_element_substitution, "String test failed");
+	cb();
+    },
+    function(cb) {
+	var result = jsonxml(input, {escape:true, removeIllegalNameCharacters:true});
+	assert.equal(result, expected_with_element_substitution, "Name substitution test failed");
+	cb();
+    },
+    function(cb) {
+	var result = jsonxml(input, {escape:true, removeIllegalNameCharacters:true, xmlHeader:true});
+	assert.equal(result, expected_with_element_substitution_and_xml_header, "XML header test failed");
+	cb();
+    }
+];
 
-test("creates correct object from string",function(t){
-  var result = jsonxml(input,{escape:true});
-  t.equals(result,expected,' test should have generated correct xml');
-  t.end()
-});
-
-test("creates correct object with element fixup",function(t){
-  var result = jsonxml(input,{escape:true, removeIllegalNameCharacters:true});
-  t.equals(result,expected_with_element_substitution,' test should have generated correct xml');
-  t.end()
-});
-
+async.series(tests, function(){console.log('done');});
