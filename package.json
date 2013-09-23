@@ -5,7 +5,7 @@
   "homepage": "http://github.com/ken-franken/node-jsontoxml",
   "main": "./jsontoxml.js",
   "devDependencies": {
-    "tape": "~0.2.2"
+    "async": "0.2.x"
   },
   "scripts": {
     "test": "node ./test.js"
