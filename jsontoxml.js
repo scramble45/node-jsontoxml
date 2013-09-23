@@ -7,6 +7,14 @@ var element_replace = new RegExp("^([^" + element_start_char + "])|^((x|X)(m|M)(
 
 var process_to_xml = function(node_data,options){
 
+  var escFn = function(c) {
+      // if we're creating an xml header, it will include
+      // character encoding, so we don't need (or want) to
+      // escape unicode characters.
+      // we do, however, want to escape <, >, &, ", and ' 
+      return options.escape ? esc(c, !options.xmlHeader) : c;
+  };
+
   var makeNode = function(name, content, attributes, level, hasSubNodes) {
 
     var indent_value = options.indent !== undefined ? options.indent : "\t";
@@ -71,7 +79,7 @@ var process_to_xml = function(node_data,options){
                 attributes.push(' ');
                 attributes.push(key);
                 attributes.push('="')
-                attributes.push(options.escape ? esc(value) : value);
+                attributes.push(escFn(value));
                 attributes.push('"');
               }
             }
@@ -80,10 +88,10 @@ var process_to_xml = function(node_data,options){
           //later attributes can be added here
           if(typeof node_data.value != 'undefined') {
             var c = ''+node_data.value;
-            content.push(options.escape ? esc(c) : c);
+            content.push(escFn(c));
           } else if(typeof node_data.text != 'undefined') {
             var c = ''+node_data.text;
-            content.push(options.escape ? esc(c) : c);
+            content.push(escFn(c));
           }
 
           if(node_data.children){
@@ -107,7 +115,7 @@ var process_to_xml = function(node_data,options){
         break;
 
       default:
-        return options.escape ? esc(node_data) : ''+node_data;
+	return escFn(node_data);
     }
 
   }(node_data, 0, 0))
@@ -174,18 +182,34 @@ module.exports.obj_to_xml = module.exports;
 
 module.exports.escape = esc;
 
-function strReplaceChar(str, i, c) {
+function strReplaceChar(str, i, c, x) {
+    x = x + 1 || 1;
     var s = str.slice(0, i) + c;
-    if(i + 1 < str.length)
-	s += str.slice(i+1);
+    if(i + x < str.length)
+	s += str.slice(i + x);
     return s;
 }
 
-function esc(str){
+function esc(str, escapeUnicode){
     for(var i = 0; i < str.length; i++) {
 	var c = str.charCodeAt(i);
-	if(c > 127) {
-	    str = strReplaceChar(str, i, '_');
+	if(c > 127 && escapeUnicode) { 
+	    if(0xD800 <= c && c <= 0xDBFF) { // high surrogate
+		var hi = c;
+		var low = str.charCodeAt(i+1);
+		c = ((hi - 0xD800) * 0x400) + (low - 0xDC00) + 0x10000;
+		u = '&#' + c.toString() + ';';
+		str = strReplaceChar(str, i, u, 2);
+		i += u.length;
+	    } else if(0xDC00 <= c && c <= 0xDFF) { // low surrogate
+		// we should never see this, since we handle these 
+		// with the high surrogate
+		str = strReplaceChar(str, i, '_');
+	    } else { // normal unicode
+		var u = '&#' + c.toString() + ';';
+		str = strReplaceChar(str, i, u);
+		i += u.length - 1;
+	    }
 	} else if(c === 38) { // &
 	    str = strReplaceChar(str, i, '&amp;');
 	    i += 4;
