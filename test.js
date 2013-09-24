@@ -120,6 +120,14 @@ var tests = [
 	var result = jsonxml(input, {escape:true, removeIllegalNameCharacters:true, xmlHeader:true});
 	assert.equal(result, expected_with_element_substitution_and_xml_header, "XML header test failed");
 	cb();
+    },
+    function(cb) {
+	var json = '{"deviceId":"ken test", "MediaID": 42, "StationID": 2361, "EventTypeID": 6, "EventDate": "2013-09-23T01:02:03Z", "siteId":0}';
+	var expected = '<deviceId>ken test</deviceId><MediaID>42</MediaID><StationID>2361</StationID>'+
+	    '<EventTypeID>6</EventTypeID><EventDate>2013-09-23T01:02:03Z</EventDate><siteId>0</siteId>';
+	var xml = jsonxml(json, {escape:true, removeIllegalNameCharacters:true});
+	assert.equal(xml, expected, "JSON test failed");
+	cb();
     }
 ];
 
