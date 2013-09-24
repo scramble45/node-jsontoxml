@@ -75,7 +75,7 @@ var expected_with_element_substitution =
 +'<unicode>mixed Pp&#160;&#224;&#352;&#65536;</unicode>';
 
 var expected_with_element_substitution_and_xml_header = 
- '<?xml version="1.0" encoding="utf-8"?>'
+ '<?xml version="1.0" ?>'
 +'<node>text content</node>'
 +'<parent>'
   +'<taco>'
@@ -119,6 +119,12 @@ var tests = [
     function(cb) {
 	var result = jsonxml(input, {escape:true, removeIllegalNameCharacters:true, xmlHeader:true});
 	assert.equal(result, expected_with_element_substitution_and_xml_header, "XML header test failed");
+	cb();
+    },
+    function(cb) {
+	var result = jsonxml({hello:0}, {escape:true, removeIllegalNameCharacters:true, xmlHeader:{encoding:'iso-8859-1'}});
+	var expected = '<?xml version="1.0"  encoding="iso-8859-1"?><hello>0</hello>';
+	assert.equal(result, expected, "XML header encoding test failed");
 	cb();
     },
     function(cb) {
