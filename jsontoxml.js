@@ -195,6 +195,9 @@ function strReplaceChar(str, i, c, x) {
 }
 
 function esc(s, escapeUnicode){
+    if (s === null || s === undefined){
+      return str
+    }
     var str = s.toString();
     for(var i = 0; i < str.length; i++) {
 	var c = str.charCodeAt(i);
